@@ -8,6 +8,7 @@ import com.example.demo.newsfeed.EventType;
 import com.example.demo.newsfeed.domain.Newsfeed;
 import com.example.demo.newsfeed.repository.NewsfeedRepository;
 import com.example.demo.posts.domain.Post;
+import com.example.demo.posts.repository.PostsRepository;
 import com.example.demo.user.domain.User;
 import com.example.demo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public class NewsfeedService {
 
     private final NewsfeedRepository newsfeedRepository;
     private final FollowRepository followRepository;
+    private final PostsRepository postsRepository;
     private final UserRepository userRepository;
 
     @Transactional
@@ -63,8 +65,9 @@ public class NewsfeedService {
 
     @Transactional
     public void handleLikeEvent(Like like) {
-        createNewsfeed(EventType.FOLLOWERLIKE, like.getUser(), like.getTargetId(), like.getId());
-        createNewsfeed(EventType.MYPOSTLIKE, like.getUser(), like.getTargetId(), like.getTargetId());
+        Post post = postsRepository.findById(like.getTargetId()).orElseThrow(() -> new RuntimeException("Post not found"));
+        createNewsfeed(EventType.FOLLOWERLIKE, like.getUser(), post.getUser().getId(),like.getTargetId());
+        createNewsfeed(EventType.MYPOSTLIKE, like.getUser(), post.getUser().getId(),like.getTargetId());
     }
 
     @Transactional
@@ -75,7 +78,7 @@ public class NewsfeedService {
     @Transactional
     public void handleCommentEvent(Comment comment) {
         createNewsfeed(EventType.MYPOSTREPLY, comment.getUser(), comment.getPost().getId(), comment.getId());
-        createNewsfeed(EventType.FOLLOWERCOMMENT, comment.getUser(), comment.getUser().getId(), comment.getId());
+        createNewsfeed(EventType.FOLLOWERCOMMENT, comment.getUser(), comment.getPost().getId(), comment.getId());
     }
 
 

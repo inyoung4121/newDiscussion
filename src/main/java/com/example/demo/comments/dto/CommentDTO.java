@@ -11,6 +11,8 @@ import java.time.LocalDateTime;
 @Builder
 public class CommentDTO {
     private Long id;
+    private Long postId;
+    private Long userId;
     private String content;
     private String userName;
     private LocalDateTime createdAt;
@@ -18,6 +20,8 @@ public class CommentDTO {
     public static CommentDTO from(Comment comment) {
         return CommentDTO.builder()
                 .id(comment.getId())
+                .postId(comment.getPost().getId())
+                .userId(comment.getUser().getId())
                 .content(comment.getContents())
                 .userName(comment.getUser().getName())
                 .createdAt(comment.getCreatedAt())

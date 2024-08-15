@@ -30,8 +30,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String requestTokenHeader = request.getHeader("Authorization");
-        final String refreshToken = request.getCookies() != null ?
-                Arrays.stream(request.getCookies())
+        final Cookie[] cookies = request.getCookies();
+        final String refreshToken = cookies != null ?
+                Arrays.stream(cookies)
                         .filter(c -> c.getName().equals("refreshToken"))
                         .findFirst()
                         .map(Cookie::getValue)
@@ -48,12 +49,26 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 logger.info("JWT Token has expired");
                 if (refreshToken != null) {
                     try {
-                        jwtToken = jwtTokenUtil.generateNewAccessToken(refreshToken);
-                        username = jwtTokenUtil.getEmailFromToken(jwtToken);
-                        // 새로운 JWT 토큰을 응답 헤더에 추가
-                        response.setHeader("Authorization", "Bearer " + jwtToken);
+                        // 리프레시 토큰 유효성 검사
+                        if (!jwtTokenUtil.isTokenExpired(refreshToken)) {
+                            // 새로운 액세스 토큰 생성
+                            jwtToken = jwtTokenUtil.generateNewAccessToken(refreshToken);
+                            username = jwtTokenUtil.getEmailFromToken(jwtToken);
+                            // 새로운 JWT 토큰을 응답 헤더에 추가
+                            response.setHeader("Authorization", "Bearer " + jwtToken);
+                            // 클라이언트에게 토큰이 갱신되었음을 알림
+                            response.setHeader("Token-Refreshed", "true");
+                            logger.info("New access token generated from refresh token");
+                        } else {
+                            logger.error("Refresh token is invalid");
+                            // 리프레시 토큰이 유효하지 않으면 쿠키에서 제거
+                            Cookie refreshTokenCookie = new Cookie("refreshToken", null);
+                            refreshTokenCookie.setMaxAge(0);
+                            refreshTokenCookie.setPath("/");
+                            response.addCookie(refreshTokenCookie);
+                        }
                     } catch (Exception refreshException) {
-                        logger.error("Refresh token is invalid", refreshException);
+                        logger.error("Error while refreshing token", refreshException);
                     }
                 }
             } catch (Exception e) {
@@ -67,10 +82,10 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
             if (jwtTokenUtil.validateToken(jwtToken, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
-                usernamePasswordAuthenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
         chain.doFilter(request, response);

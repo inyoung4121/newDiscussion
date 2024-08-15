@@ -102,6 +102,35 @@
             text-decoration: none;
             border-radius: 5px;
         }
+        .like-button {
+            background-color: #f0f0f0;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 16px;
+        }
+        .like-button.liked {
+            background-color: #ff69b4;
+            color: white;
+        }
+        .like-count {
+            margin-left: 5px;
+        }
+        .comment-form {
+            margin-top: 20px;
+        }
+        .comment-list {
+            margin-top: 20px;
+        }
+        .comment {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -123,26 +152,32 @@
     <div class="post-content" th:text="${post.contents}">포스트 내용</div>
     <a th:href="@{/}" class="back-button">목록으로 돌아가기</a>
     <a th:if="${isAuthor}" th:href="@{'/postwrite?id=' + ${post.id}}" class="edit-button">수정하기</a>
+    <button id="likeButton" class="like-button">
+        <span id="likeText">좋아요</span>
+        <span id="likeCount" class="like-count">0</span>
+    </button>
     <div class="comment-section">
         <h3>댓글</h3>
-        <div id="comments">
-            <!-- 댓글들이 여기에 동적으로 추가됩니다 -->
-        </div>
         <div class="comment-form">
             <textarea id="commentContent" placeholder="댓글을 입력하세요"></textarea>
             <button onclick="addComment()">댓글 작성</button>
+        </div>
+        <div id="commentList" class="comment-list">
+            <!-- Comments will be dynamically added here -->
         </div>
     </div>
 </div>
 <script th:inline="javascript">
     const postId = [[${post.id}]];
     const isAuthor = [[${isAuthor}]];
+    let isLiked = false;
+
 
     function loadComments() {
         fetch(`/api/comments/${postId}`)
             .then(response => response.json())
             .then(comments => {
-                const commentsContainer = document.getElementById('comments');
+                const commentsContainer = document.getElementById('commentList');
                 commentsContainer.innerHTML = '';
                 comments.forEach(comment => {
                     const commentElement = document.createElement('div');
@@ -156,16 +191,18 @@
             })
             .catch(error => console.error('Error loading comments:', error));
     }
+    const token = getCookie('stockJwtToken'); // JWT 토큰을 쿠키에서 가져오는 함수
+
 
     function addComment() {
         const content = document.getElementById('commentContent').value;
-        const token = getCookie('stockJwtToken'); // JWT 토큰을 쿠키에서 가져오는 함수
+
 
         fetch(`/api/comments/${postId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer `+token
             },
             body: JSON.stringify({ content: content })
         })
@@ -184,10 +221,61 @@
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
+    function updateLikeButton() {
+        const likeButton = document.getElementById('likeButton');
+        const likeText = document.getElementById('likeText');
+        const likeCountElement = document.getElementById('likeCount');
+
+        if (isLiked) {
+            likeButton.classList.add('liked');
+            likeText.textContent = '좋아요 취소';
+        } else {
+            likeButton.classList.remove('liked');
+            likeText.textContent = '좋아요';
+        }
+        likeCountElement.textContent = likeCount;
+    }
+
+    function loadLikeStatus() {
+        fetch(`/api/likes/post/${postId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                isLiked = data.liked;
+                likeCount = data.likeCount;
+                updateLikeButton();
+            })
+            .catch(error => console.error('Error loading like status:', error));
+    }
+
+
+    function toggleLike() {
+        fetch(`/api/likes/post/${postId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                isLiked = data.liked;
+                likeCount = data.likeCount;
+                updateLikeButton();
+            })
+            .catch(error => console.error('Error toggling like:', error));
+    }
+
+
+
 
     // 페이지 로드 시 실행
     document.addEventListener('DOMContentLoaded', () => {
+        loadLikeStatus();
         loadComments();
+        document.getElementById('likeButton').addEventListener('click', toggleLike);
     });
 </script>
 </body>
