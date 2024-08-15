@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>게시물 작성</title>
+    <title th:text="${isEdit ? '게시물 수정' : '게시물 작성'}">게시물 작성/수정</title>
     <style>
         body {
             font-family: 'Noto Sans', sans-serif;
@@ -17,6 +17,7 @@
             margin: 50px auto;
             padding: 20px;
             background-color: white;
+
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
@@ -68,21 +69,24 @@
 </head>
 <body>
 <div class="container">
-    <h1>게시물 작성</h1>
+    <h1 th:text="${isEdit ? '게시물 수정' : '게시물 작성'}">게시물 작성/수정</h1>
     <form id="postForm">
+        <input type="hidden" id="postId" th:value="${postDTO.id}">
+
         <label for="title">제목</label>
-        <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
+        <input type="text" id="title" name="title" th:value="${postDTO.title}" placeholder="제목을 입력하세요" required>
 
         <label for="content">내용</label>
-        <textarea id="content" name="content" placeholder="내용을 입력하세요" required></textarea>
+        <textarea id="content" name="content" th:text="${postDTO.contents}" placeholder="내용을 입력하세요" required></textarea>
 
-        <button type="submit">작성하기</button>
+        <button type="submit" th:text="${isEdit ? '수정하기' : '작성하기'}">작성하기</button>
     </form>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const postForm = document.getElementById('postForm');
+        const postId = document.getElementById('postId').value;
 
         postForm.addEventListener('submit', function(e) {
             e.preventDefault();
@@ -91,8 +95,9 @@
             const content = document.getElementById('content').value;
 
             const data = {
+                id: postId || null,  // id가 없으면 null로 설정 (새 글 작성)
                 title: title,
-                content: content
+                contents: content
             };
 
             // JWT 토큰을 쿠키에서 가져오는 함수
@@ -125,18 +130,18 @@
             })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error('게시물 작성 중 오류가 발생했습니다.');
+                        throw new Error('게시물 처리 중 오류가 발생했습니다.');
                     }
                     return response.text();
                 })
                 .then(data => {
                     console.log('성공:', data);
-                    alert('게시물이 성공적으로 작성되었습니다.');
-                    window.location.href = '/main';  // 작성 성공 시 메인 페이지로 이동
+                    alert(postId ? '게시물이 성공적으로 수정되었습니다.' : '게시물이 성공적으로 작성되었습니다.');
+                    window.location.href = '/main';  // 작성/수정 성공 시 메인 페이지로 이동
                 })
                 .catch((error) => {
                     console.error('에러:', error);
-                    alert('게시물 작성에 실패했습니다. 다시 시도해주세요.');
+                    alert('게시물 처리에 실패했습니다. 다시 시도해주세요.');
                 });
         });
     });

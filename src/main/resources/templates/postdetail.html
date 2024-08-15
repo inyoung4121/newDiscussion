@@ -92,6 +92,16 @@
             border-radius: 5px;
             cursor: pointer;
         }
+        .edit-button {
+            display: inline-block;
+            margin-top: 20px;
+            margin-right: 10px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +122,7 @@
     </div>
     <div class="post-content" th:text="${post.contents}">포스트 내용</div>
     <a th:href="@{/}" class="back-button">목록으로 돌아가기</a>
+    <a th:if="${isAuthor}" th:href="@{'/postwrite?id=' + ${post.id}}" class="edit-button">수정하기</a>
     <div class="comment-section">
         <h3>댓글</h3>
         <div id="comments">
@@ -125,6 +136,7 @@
 </div>
 <script th:inline="javascript">
     const postId = [[${post.id}]];
+    const isAuthor = [[${isAuthor}]];
 
     function loadComments() {
         fetch(`/api/comments/${postId}`)
@@ -172,8 +184,11 @@
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
-    // 페이지 로드 시 댓글 불러오기
-    document.addEventListener('DOMContentLoaded', loadComments);
+
+    // 페이지 로드 시 실행
+    document.addEventListener('DOMContentLoaded', () => {
+        loadComments();
+    });
 </script>
 </body>
 </html>

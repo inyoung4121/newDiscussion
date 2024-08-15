@@ -15,6 +15,7 @@ public class PostDetailDTO {
     private String userName;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Long userId;
 
     public static PostDetailDTO from(Post post) {
         return PostDetailDTO.builder()
@@ -24,6 +25,7 @@ public class PostDetailDTO {
                 .userName(post.getUser().getName())
                 .createdAt(post.getCreatedAt())
                 .updatedAt(post.getUpdatedAt())
+                .userId(post.getUser().getId())
                 .build();
     }
 }

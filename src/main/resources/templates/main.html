@@ -106,16 +106,36 @@
             background-color: #ccc;
             cursor: not-allowed;
         }
+
+        .write-button {
+            position: fixed;
+            bottom: 70px;
+            right: 30px;
+            padding: 15px 25px;
+            background-color: #03C75A;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .write-button:hover {
+            background-color: #02a348;
+        }
     </style>
 </head>
 <body>
 <header>
     <h1>종목토론방</h1>
+    <div class="auth-buttons">
+        <a href="/login" id="loginButton">로그인</a>
+        <a href="/signup" id="signupButton">회원가입</a>
+        <button id="logoutButton" style="display: none;" onclick="logout()">로그아웃</button>
+    </div>
 </header>
 <nav>
-    <a href="#">홈</a>
-    <a href="/login">로그인</a>
-    <a href="/signup">회원가입</a>
+    <a href="/">홈</a>
     <a href="#">종목 검색</a>
 </nav>
 
@@ -128,10 +148,13 @@
     <div class="forum-list" id="recentPosts">
         <!-- 여기에 최근 포스트가 동적으로 생성될 예정 -->
     </div>
-    <div class="pagination">
-        <button id="prevPage" onclick="changePage(-1)">이전</button>
-        <span id="currentPage">1</span>
-        <button id="nextPage" onclick="changePage(1)">다음</button>
+    <div class="pagination-container">
+        <div class="pagination">
+            <button id="prevPage" onclick="changePage(-1)">이전</button>
+            <span id="currentPage">1</span>
+            <button id="nextPage" onclick="changePage(1)">다음</button>
+        </div>
+        <button class="write-button" onclick="location.href='/postwrite'">글쓰기</button>
     </div>
 </div>
 
@@ -190,9 +213,40 @@
         fetchRecentPosts();
     }
 
-    // 페이지 로드 시 최근 포스트 가져오기
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    function checkLoginStatus() {
+        const jwtToken = getCookie('stockJwtToken');
+        const isLoggedIn = !!jwtToken; // jwtToken이 존재하면 true, 아니면 false
+
+        const loginButton = document.getElementById('loginButton');
+        const signupButton = document.getElementById('signupButton');
+        const logoutButton = document.getElementById('logoutButton');
+        if (isLoggedIn) {
+            loginButton.style.display = 'none';
+            signupButton.style.display = 'none';
+            logoutButton.style.display = 'inline-block';
+        } else {
+            loginButton.style.display = 'inline-block';
+            signupButton.style.display = 'inline-block';
+            logoutButton.style.display = 'none';
+        }
+    }
+
+    function logout() {
+        document.cookie = 'stockJwtToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        alert('로그아웃되었습니다.');
+        checkLoginStatus(); // 로그아웃 후 상태 업데이트
+    }
+
+    // 페이지 로드 시 로그인 상태 확인
     document.addEventListener('DOMContentLoaded', () => {
         fetchRecentPosts();
+        checkLoginStatus();
         console.log('초기 데이터 로드 완료');
     });
 </script>

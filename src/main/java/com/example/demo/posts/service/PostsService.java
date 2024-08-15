@@ -88,7 +88,7 @@ public class PostsService {
                 .id(post.getId())
                 .title(post.getTitle())
                 .contents(post.getContents())
-                .user(post.getUser())
+                .userName(post.getUser().getName())
                 .createdAt(post.getCreatedAt())
                 .build();
     }

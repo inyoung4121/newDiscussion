@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 public class ResponsePostDTO {
     private Long id;
-    private User user;
+    private String userName;
     private String title;
     private String contents;
     private LocalDateTime createdAt;
