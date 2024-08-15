@@ -1,7 +1,9 @@
 package com.example.demo.jwt;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
@@ -27,29 +30,42 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String requestTokenHeader = request.getHeader("Authorization");
+        final String refreshToken = request.getCookies() != null ?
+                Arrays.stream(request.getCookies())
+                        .filter(c -> c.getName().equals("refreshToken"))
+                        .findFirst()
+                        .map(Cookie::getValue)
+                        .orElse(null) : null;
 
         String username = null;
         String jwtToken = null;
 
-        // JWT 토큰을 "Bearer " 접두사를 사용하여 가져옵니다.
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
                 username = jwtTokenUtil.getEmailFromToken(jwtToken);
+            } catch (ExpiredJwtException e) {
+                logger.info("JWT Token has expired");
+                if (refreshToken != null) {
+                    try {
+                        jwtToken = jwtTokenUtil.generateNewAccessToken(refreshToken);
+                        username = jwtTokenUtil.getEmailFromToken(jwtToken);
+                        // 새로운 JWT 토큰을 응답 헤더에 추가
+                        response.setHeader("Authorization", "Bearer " + jwtToken);
+                    } catch (Exception refreshException) {
+                        logger.error("Refresh token is invalid", refreshException);
+                    }
+                }
             } catch (Exception e) {
-                System.out.println("Unable to get JWT Token or JWT Token has expired");
+                logger.error("Unable to get JWT Token", e);
             }
         } else {
             logger.warn("JWT Token does not begin with Bearer String");
         }
 
-        // JWT 토큰을 확인하고 사용자를 인증합니다.
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            // UserDetailsService를 사용하여 사용자 정보를 가져옵니다.
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // JWT 토큰이 유효한지 검사
             if (jwtTokenUtil.validateToken(jwtToken, userDetails.getUsername())) {
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());

@@ -63,16 +63,24 @@ public class SignupController {
                          @RequestPart("profile") MultipartFile profileFile,
                          HttpServletResponse response) throws Exception {
 
-        // 유저 등록 로직
-        String jwtToken = userService.registerUser(userDTO, profileFile);
 
-        // 쿠키 설정
-        Cookie cookie = new Cookie("stockJwtToken", jwtToken);
-        cookie.setHttpOnly(true);
+        Map<String,String> map = userService.registerUser(userDTO, profileFile);
+
+        Cookie cookie = new Cookie("stockJwtToken", map.get("jwtToken"));
+        cookie.setHttpOnly(false);
         cookie.setSecure(false);
         cookie.setPath("/");
-        cookie.setMaxAge(7 * 24 * 60 * 60);
+
+        // 리프레시 토큰을 쿠키에 저장
+        Cookie refreshTokenCookie = new Cookie("stockRefreshToken", map.get("refreshToken"));
+        refreshTokenCookie.setHttpOnly(false);
+        refreshTokenCookie.setSecure(false); // HTTPS에서만 사용
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7일
+        refreshTokenCookie.setPath("/");
+
+        response.addCookie(refreshTokenCookie);
         response.addCookie(cookie);
+
 
         return "main";  // main 페이지로 리다이렉트
     }

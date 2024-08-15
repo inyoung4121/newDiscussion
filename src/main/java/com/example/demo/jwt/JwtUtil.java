@@ -21,6 +21,25 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
+    private static final long REFRESH_TOKEN_EXPIRATION_MS = 604800000; // 1주일
+
+    //리프래쉬 토큰 생성
+    public String generateRefreshToken(String email) {
+        return Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_MS))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .compact();
+    }
+    //리프래쉬 토큰으로 재발급
+    public String generateNewAccessToken(String refreshToken) {
+        String email = getEmailFromToken(refreshToken);
+        return generateToken(email);
+    }
+
+
+
     // 토큰에서 사용자 이메일 추출
     public String getEmailFromToken(String token) {
         return getClaimFromToken(token, Claims::getSubject);

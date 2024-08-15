@@ -47,11 +47,12 @@ public class CommentService {
                 .post(post)
                 .user(user)
                 .contents(content)
+                .createdAt(LocalDateTime.now())
                 .build();
 
-        newsfeedService.handleCommentEvent(comment);
-
         Comment savedComment = commentsRepository.save(comment);
+
+        newsfeedService.handleCommentEvent(comment);
         return CommentDTO.from(savedComment);
     }
 

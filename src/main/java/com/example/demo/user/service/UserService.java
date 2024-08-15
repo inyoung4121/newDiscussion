@@ -12,6 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RequiredArgsConstructor
 @Service
 public class UserService {
@@ -21,7 +24,7 @@ public class UserService {
     private final S3UploadService s3UploadService;
 
     @Transactional
-    public String registerUser(UserSignupDTO userDTO, MultipartFile multipartFile) throws Exception {
+    public Map<String,String> registerUser(UserSignupDTO userDTO, MultipartFile multipartFile) throws Exception {
         if (userRepository.existsByEmail(userDTO.getEmail())) {
             throw new Exception("이메일 이미 있어요");
         }
@@ -41,11 +44,16 @@ public class UserService {
                 .build();
 
         userRepository.save(user);
-        return jwtUtil.generateToken(String.valueOf(user.getId()));
+
+        Map<String,String> map = new HashMap<>();
+        map.put("jwtToken",jwtUtil.generateToken(String.valueOf(user.getId())));
+        map.put("refreshToken",jwtUtil.generateRefreshToken(String.valueOf(user.getId())));
+
+        return map;
     }
 
     @Transactional
-    public String loginUser(UserLoginDTO userDTO) {
+    public Map<String,String> loginUser(UserLoginDTO userDTO) {
         if (!userRepository.existsByEmail(userDTO.getEmail())) {
             throw new InvalidEmailException("존재하는 않는 이메일");
         }
@@ -53,8 +61,11 @@ public class UserService {
         if (!passwordEncoder.matches(userDTO.getPassword(), user.getPassword())) {
             throw new InvalidEmailException("비밀번호가 틀렸어요");
         }
+        Map<String,String> map = new HashMap<>();
+        map.put("jwtToken",jwtUtil.generateToken(String.valueOf(user.getId())));
+        map.put("refreshToken",jwtUtil.generateRefreshToken(String.valueOf(user.getId())));
 
-        return jwtUtil.generateToken(String.valueOf(user.getId()));
+        return map;
     }
 
 

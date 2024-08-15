@@ -16,6 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 
+import java.util.Map;
+
 @RequiredArgsConstructor
 @RestController
 public class UserController {
@@ -43,13 +45,21 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestBody UserLoginDTO userDTO, HttpServletResponse response) {
 
-        String jwtToken = userService.loginUser(userDTO);
+        Map<String,String> map = userService.loginUser(userDTO);
 
-        Cookie cookie = new Cookie("stockJwtToken", jwtToken);
+        Cookie cookie = new Cookie("stockJwtToken", map.get("jwtToken"));
         cookie.setHttpOnly(false);
         cookie.setSecure(false);
         cookie.setPath("/");
 
+        // 리프레시 토큰을 쿠키에 저장
+        Cookie refreshTokenCookie = new Cookie("stockRefreshToken", map.get("refreshToken"));
+        refreshTokenCookie.setHttpOnly(false);
+        refreshTokenCookie.setSecure(false); // HTTPS에서만 사용
+        refreshTokenCookie.setMaxAge(7 * 24 * 60 * 60); // 7일
+        refreshTokenCookie.setPath("/");
+
+        response.addCookie(refreshTokenCookie);
         response.addCookie(cookie);
 
         return ResponseEntity.status(HttpStatus.FOUND)

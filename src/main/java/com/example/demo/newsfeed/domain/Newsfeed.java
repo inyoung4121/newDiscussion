@@ -30,7 +30,7 @@ public class Newsfeed {
     @JoinColumn(name = "actor_id", nullable = false)
     private User actor; // 행동을 한 사용자
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     private EventType eventType;
 
