@@ -1,6 +1,6 @@
 package com.example.demo.user.service;
 
-import com.example.demo.user.entity.Certification;
+import com.example.demo.user.domain.Certification;
 import com.example.demo.user.exception.InvalidEmailException;
 import com.example.demo.user.repository.CertificationRepository;
 import com.example.demo.user.repository.UserRepository;

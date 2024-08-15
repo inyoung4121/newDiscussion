@@ -16,7 +16,7 @@ import java.util.function.Function;
 public class JwtUtil {
 
     private Key getSigningKey() {
-        String secret = "gasfegqwdasd";
+        String secret = "gasfegqwdasdgasfegqwdasdgasfegqwdasdgasfegqwdasdgasfegqwdasqwdasdgasfegqwdasdgasfegqwdasqwdasdgasfegqwdasdgasfegqwdasd";
         byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }

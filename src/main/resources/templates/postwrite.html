@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시물 작성</title>
+    <style>
+        body {
+            font-family: 'Noto Sans', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        input[type="text"], textarea {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 200px;
+        }
+
+        button {
+            padding: 15px;
+            background-color: #03C75A;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #028a4f;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>게시물 작성</h1>
+    <form id="postForm">
+        <label for="title">제목</label>
+        <input type="text" id="title" name="title" placeholder="제목을 입력하세요" required>
+
+        <label for="content">내용</label>
+        <textarea id="content" name="content" placeholder="내용을 입력하세요" required></textarea>
+
+        <button type="submit">작성하기</button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const postForm = document.getElementById('postForm');
+
+        postForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            const data = {
+                title: title,
+                content: content
+            };
+
+            // JWT 토큰을 쿠키에서 가져오는 함수
+            function getJwtTokenFromCookie() {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'stockJwtToken') {
+                        return value;
+                    }
+                }
+                return null;
+            }
+
+            const jwtToken = getJwtTokenFromCookie();
+
+            if (!jwtToken) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/login';
+                return;
+            }
+
+            fetch('/postwrite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + jwtToken
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('게시물 작성 중 오류가 발생했습니다.');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    console.log('성공:', data);
+                    alert('게시물이 성공적으로 작성되었습니다.');
+                    window.location.href = '/main';  // 작성 성공 시 메인 페이지로 이동
+                })
+                .catch((error) => {
+                    console.error('에러:', error);
+                    alert('게시물 작성에 실패했습니다. 다시 시도해주세요.');
+                });
+        });
+    });
+</script>
+</body>
+</html>

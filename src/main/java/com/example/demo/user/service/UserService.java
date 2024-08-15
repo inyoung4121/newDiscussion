@@ -41,7 +41,7 @@ public class UserService {
                 .build();
 
         userRepository.save(user);
-        return jwtUtil.generateToken(user.getEmail());
+        return jwtUtil.generateToken(String.valueOf(user.getId()));
     }
 
     @Transactional
@@ -54,7 +54,7 @@ public class UserService {
             throw new InvalidEmailException("비밀번호가 틀렸어요");
         }
 
-        return jwtUtil.generateToken(userDTO.getEmail());
+        return jwtUtil.generateToken(String.valueOf(user.getId()));
     }
 
 

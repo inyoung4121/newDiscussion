@@ -1,6 +1,6 @@
 package com.example.demo.posts.dto;
 
-
+import com.example.demo.user.domain.User;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -10,9 +10,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Setter
 @Getter
-public class PostDTO {
+public class ResponsePostDTO {
     private Long id;
-    private Long userId;
+    private User user;
     private String title;
     private String contents;
     private LocalDateTime createdAt;

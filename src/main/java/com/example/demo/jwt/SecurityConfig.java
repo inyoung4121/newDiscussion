@@ -25,10 +25,6 @@ public class SecurityConfig {
                     authorizeRequests.anyRequest().permitAll();
                 })
 
-                .formLogin((formLogin) -> {
-                    formLogin.loginPage("/login");
-                })
-
                 .build();
     }
 }

@@ -21,6 +21,12 @@ import org.springframework.web.servlet.View;
 public class UserController {
     private final UserService userService;
 
+    @GetMapping("/main")
+    public ModelAndView goMain2(ModelAndView modelAndView) {
+        modelAndView.setViewName("main");
+        return modelAndView;
+    }
+
     @GetMapping("/")
     public ModelAndView goMain(ModelAndView modelAndView) {
         modelAndView.setViewName("main");
@@ -40,13 +46,13 @@ public class UserController {
         String jwtToken = userService.loginUser(userDTO);
 
         Cookie cookie = new Cookie("stockJwtToken", jwtToken);
-        cookie.setHttpOnly(true);
+        cookie.setHttpOnly(false);
         cookie.setSecure(false);
         cookie.setPath("/");
-        cookie.setMaxAge(7 * 24 * 60 * 60);
 
         response.addCookie(cookie);
-        return ResponseEntity.status(HttpStatus.OK)
+
+        return ResponseEntity.status(HttpStatus.FOUND)
                 .header("Location", "/main") // 리다이렉트할 URL
                 .build();
     }

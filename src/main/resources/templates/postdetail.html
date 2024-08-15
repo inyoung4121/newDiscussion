@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>포스트 상세</title>
+    <style>
+        body {
+            font-family: 'Noto Sans', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+
+        nav {
+            background-color: #03C75A;
+            padding: 10px;
+            text-align: center;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            margin: 0 15px;
+            font-size: 18px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .post-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .post-content {
+            line-height: 1.6;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #03C75A;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+
+        .comment-section {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .comment {
+            background-color: #f9f9f9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+        .comment-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .comment-form button {
+            background-color: #03C75A;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>포스트 상세</h1>
+</header>
+<nav>
+    <a th:href="@{/}">홈</a>
+    <a th:href="@{/login}">로그인</a>
+    <a th:href="@{/signup}">회원가입</a>
+</nav>
+
+<div class="container">
+    <h2 class="post-title" th:text="${post.title}">포스트 제목</h2>
+    <div class="post-meta">
+        <span th:text="'작성자: ' + ${post.userName}"></span> |
+        <span th:text="'작성일: ' + ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm:ss')}"></span>
+    </div>
+    <div class="post-content" th:text="${post.contents}">포스트 내용</div>
+    <a th:href="@{/}" class="back-button">목록으로 돌아가기</a>
+    <div class="comment-section">
+        <h3>댓글</h3>
+        <div id="comments">
+            <!-- 댓글들이 여기에 동적으로 추가됩니다 -->
+        </div>
+        <div class="comment-form">
+            <textarea id="commentContent" placeholder="댓글을 입력하세요"></textarea>
+            <button onclick="addComment()">댓글 작성</button>
+        </div>
+    </div>
+</div>
+<script th:inline="javascript">
+    const postId = [[${post.id}]];
+
+    function loadComments() {
+        fetch(`/api/comments/${postId}`)
+            .then(response => response.json())
+            .then(comments => {
+                const commentsContainer = document.getElementById('comments');
+                commentsContainer.innerHTML = '';
+                comments.forEach(comment => {
+                    const commentElement = document.createElement('div');
+                    commentElement.className = 'comment';
+                    commentElement.innerHTML = `
+                            <p>${comment.content}</p>
+                            <small>작성자: ${comment.userName} | 작성일: ${new Date(comment.createdAt).toLocaleString()}</small>
+                        `;
+                    commentsContainer.appendChild(commentElement);
+                });
+            })
+            .catch(error => console.error('Error loading comments:', error));
+    }
+
+    function addComment() {
+        const content = document.getElementById('commentContent').value;
+        const token = getCookie('stockJwtToken'); // JWT 토큰을 쿠키에서 가져오는 함수
+
+        fetch(`/api/comments/${postId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ content: content })
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Comment added:', data);
+                document.getElementById('commentContent').value = '';
+                loadComments();
+            })
+            .catch(error => console.error('Error adding comment:', error));
+    }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    // 페이지 로드 시 댓글 불러오기
+    document.addEventListener('DOMContentLoaded', loadComments);
+</script>
+</body>
+</html>
