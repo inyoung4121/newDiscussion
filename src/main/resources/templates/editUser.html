@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>유저 정보 수정</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .edit-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        .edit-container h1 {
+            margin-bottom: 20px;
+        }
+
+        .edit-container input, .edit-container textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        .edit-container button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .edit-container button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+<div class="edit-container">
+    <h1>유저 정보 수정</h1>
+    <form th:action="@{/user/edit}" th:object="${user}" method="post" enctype="multipart/form-data">
+        <input type="text" th:field="*{name}" placeholder="Name" required>
+        <input type="email" th:field="*{email}" placeholder="Email" required>
+        <input type="password" placeholder="New Password">
+
+        <!-- 프로필 사진 업로드 -->
+        <input type="file" th:field="*{profile}" accept="image/*">
+
+        <textarea th:field="*{intro}" placeholder="Introduce yourself"></textarea>
+
+        <button type="submit">Update</button>
+    </form>
+</div>
+</body>
+</html>
