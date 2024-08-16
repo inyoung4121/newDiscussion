@@ -37,17 +37,33 @@ public class PostsController {
     public ModelAndView getPostById(@PathVariable Long id, HttpServletRequest request) {
         log.info("Received request to fetch post with id: {}", id);
 
-        PostDetailDTO post = postsService.getPostById(id);
-
-        Long curUserId = getUserIdFromJwtToken(request);
-
-        boolean isAuthor = Objects.equals(curUserId, post.getUserId());
-
         ModelAndView modelAndView = new ModelAndView("postdetail");
-        modelAndView.addObject("isAuthor", isAuthor);
-        modelAndView.addObject("post", post);
-        return modelAndView;
 
+        try {
+            PostDetailDTO post = postsService.getPostById(id);
+            modelAndView.addObject("post", post);
+
+            Long currentUserId = getUserIdFromJwtToken(request);
+
+            boolean isAuthor = false;
+            boolean isSelf = false;
+
+            if (currentUserId != null) {
+                isAuthor = Objects.equals(currentUserId, post.getUserId());
+                isSelf = isAuthor; // isSelf and isAuthor are the same in this context
+            }
+
+            modelAndView.addObject("isAuthor", isAuthor);
+            modelAndView.addObject("isSelf", isSelf);
+            modelAndView.addObject("currentUserId", currentUserId);
+
+        } catch (Exception e) {
+            log.error("Error fetching post with id: {}", id, e);
+            modelAndView.setViewName("error");
+            modelAndView.addObject("errorMessage", "포스트를 불러오는 데 실패했습니다.");
+        }
+
+        return modelAndView;
     }
 
 

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자 프로필</title>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        .profile-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .profile-image {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 20px;
+        }
+        .profile-info h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+        .profile-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .follow-stats {
+            display: flex;
+            margin: 15px 0;
+        }
+        .stat {
+            margin-right: 20px;
+        }
+        .stat-value {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .follow-button {
+            background-color: #03C75A;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .follow-button:hover {
+            background-color: #02a348;
+        }
+        .follow-button.following {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+        .user-content {
+            margin-top: 30px;
+        }
+        .content-section {
+            margin-bottom: 30px;
+        }
+        .content-section h2 {
+            border-bottom: 2px solid #03C75A;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 10px;
+            }
+            .profile-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .profile-image {
+                margin-right: 0;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="profile-header">
+        <img id="profileImage" th:src="${userDTO.profile ?: '/default-profile.jpg'}" alt="프로필 이미지" class="profile-image">
+        <div class="profile-info">
+            <h1 id="userName" th:text="${userDTO.name}">사용자 이름</h1>
+            <p id="userEmail" th:text="${userDTO.email}">user@example.com</p>
+            <p id="userIntro" th:text="${userDTO.intro}">자기소개가 여기에 표시됩니다.</p>
+            <div class="follow-stats">
+                <div class="stat">
+                    <span class="stat-value" th:text="${userDTO.followerCount}">0</span> 팔로워
+                </div>
+                <div class="stat">
+                    <span class="stat-value" th:text="${userDTO.followingCount}">0</span> 팔로잉
+                </div>
+            </div>
+            <button id="followButton" class="follow-button" th:if="${!isSelf}" th:text="${isFollowing ? '언팔로우' : '팔로우'}">팔로우</button>
+        </div>
+    </div>
+    <div class="user-content">
+        <div class="content-section">
+            <h2>최근 게시물</h2>
+            <div id="recentPosts">
+                <!-- 최근 게시물이 여기에 동적으로 로드됩니다 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    const profileUserId = [[${profileUserId}]];
+    const currentUserId = [[${currentUserId}]];
+    const isSelf = [[${isSelf}]];
+    let isFollowing = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadProfileInfo();
+        loadRecentPosts();
+        if (!isSelf) {
+            checkFollowStatus();
+            document.getElementById('followButton').addEventListener('click', toggleFollow);
+        }
+    });
+
+    function loadProfileInfo() {
+        fetch(`/api/users/${profileUserId}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('userName').textContent = data.name;
+                document.getElementById('userEmail').textContent = data.email;
+                document.getElementById('userIntro').textContent = data.intro;
+                document.getElementById('followerCount').textContent = data.followerCount;
+                document.getElementById('followingCount').textContent = data.followingCount;
+                if (data.profileImage) {
+                    document.getElementById('profileImage').src = data.profileImage;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function loadRecentPosts() {
+        fetch(`/api/posts/user/${profileUserId}`)
+            .then(response => response.json())
+            .then(posts => {
+                const recentPosts = document.getElementById('recentPosts');
+                recentPosts.innerHTML = '';
+                posts.forEach(post => {
+                    const postElement = document.createElement('div');
+                    postElement.innerHTML = `
+                            <h3>${post.title}</h3>
+                            <p>${post.content.substring(0, 100)}...</p>
+                            <small>${new Date(post.createdAt).toLocaleDateString()}</small>
+                        `;
+                    recentPosts.appendChild(postElement);
+                });
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function updateFollowButton() {
+        const followButton = document.getElementById('followButton');
+        followButton.textContent = isFollowing ? '언팔로우' : '팔로우';
+        followButton.classList.toggle('following', isFollowing);
+    }
+
+    function toggleFollow() {
+        const method = isFollowing ? 'DELETE' : 'POST';
+        fetch(`/api/follows/${profileUserId}`, {
+            method: method,
+            headers: {
+                'Authorization': 'Bearer ' + getCookie('stockJwtToken')
+            }
+        })
+            .then(response => {
+                if (response.ok) {
+                    isFollowing = !isFollowing;
+                    updateFollowButton();
+                    // 팔로워 수 업데이트
+                    const followerCount = document.getElementById('followerCount');
+                    followerCount.textContent = parseInt(followerCount.textContent) + (isFollowing ? 1 : -1);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function checkFollowStatus() {
+        fetch(`/api/follows/is-following/${profileUserId}`, {
+            headers: {
+                'Authorization': 'Bearer ' + getCookie('stockJwtToken')
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                isFollowing = data;
+                updateFollowButton();
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+</script>
+</body>
+</html>

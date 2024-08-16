@@ -1,30 +1,42 @@
 package com.example.demo.follow.controller;
 
 import com.example.demo.follow.service.FollowService;
+import com.example.demo.jwt.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/follows")
 public class FollowController {
 
     private final FollowService followService;
+    private final JwtUtil jwtUtil;
 
-    public FollowController(FollowService followService) {
-        this.followService = followService;
+
+    @PostMapping("/{followingId}")
+    public ResponseEntity<?> follow(HttpServletRequest request, @PathVariable Long followingId) {
+        String token = jwtUtil.extractTokenFromRequest(request);
+        Long followerId = Long.valueOf(jwtUtil.getEmailFromToken(token));
+        followService.follow(followerId, followingId);
+        return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{followerId}/follow/{followingEmail}")
-    public void follow(@PathVariable Long followerId, @PathVariable String followingEmail) {
-        followService.follow(followerId, followingEmail);
+    @DeleteMapping("/{followingId}")
+    public ResponseEntity<?> unfollow(HttpServletRequest request, @PathVariable Long followingId) {
+        String token = jwtUtil.extractTokenFromRequest(request);
+        Long followerId = Long.valueOf(jwtUtil.getEmailFromToken(token));
+        followService.unfollow(followerId, followingId);
+        return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/{followerId}/unfollow/{followingEmail}")
-    public void unfollow(@PathVariable Long followerId, @PathVariable String followingEmail) {
-        followService.unfollow(followerId, followingEmail);
-    }
-
-    @GetMapping("/{followerId}/is-following/{followingEmail}")
-    public boolean isFollowing(@PathVariable Long followerId, @PathVariable String followingEmail) {
-        return followService.isFollowing(followerId, followingEmail);
+    @GetMapping("/is-following/{followingId}")
+    public ResponseEntity<Boolean> isFollowing(HttpServletRequest request, @PathVariable Long followingId) {
+        String token = jwtUtil.extractTokenFromRequest(request);
+        Long followerId = Long.valueOf(jwtUtil.getEmailFromToken(token));
+        boolean isFollowing = followService.isFollowing(followerId, followingId);
+        return ResponseEntity.ok(isFollowing);
     }
 }

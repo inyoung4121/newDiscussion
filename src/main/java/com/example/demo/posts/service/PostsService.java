@@ -10,6 +10,7 @@ import com.example.demo.posts.dto.ResponsePostDTO;
 import com.example.demo.posts.exception.PostNotFoundException;
 import com.example.demo.posts.repository.PostsRepository;
 import com.example.demo.user.domain.User;
+import com.example.demo.user.dto.PostSummaryDTO;
 import com.example.demo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,6 +91,24 @@ public class PostsService {
                 .contents(post.getContents())
                 .userName(post.getUser().getName())
                 .createdAt(post.getCreatedAt())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostSummaryDTO> getRecentPostsByUser(Long userId, int limit) {
+        return postsRepository.findTopNByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .map(this::convertToSummaryDTO)
+                .collect(Collectors.toList());
+    }
+
+    private PostSummaryDTO convertToSummaryDTO(Post post) {
+        return PostSummaryDTO.builder()
+                .id(post.getId())
+                .title(post.getTitle())
+                .contents(post.getContents().substring(0, Math.min(post.getContents().length(), 100)) + "...")
+                .createdAt(post.getCreatedAt())
+                .userName(post.getUser().getName())
                 .build();
     }
 }

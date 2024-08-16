@@ -5,6 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>포스트 상세</title>
     <style>
+        .user-link {
+            color: #03C75A;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .user-link:hover {
+            text-decoration: underline;
+        }
+        .follow-button {
+            background-color: #03C75A;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .follow-button.following {
+            background-color: #e0e0e0;
+            color: #333;
+        }
         body {
             font-family: 'Noto Sans', sans-serif;
             background-color: #f4f4f4;
@@ -146,7 +168,8 @@
 <div class="container">
     <h2 class="post-title" th:text="${post.title}">포스트 제목</h2>
     <div class="post-meta">
-        <span th:text="'작성자: ' + ${post.userName}"></span> |
+        <span>작성자: <a th:href="@{'/user/' + ${post.userId}}" class="user-link" th:text="${post.userName}"></a></span>
+        <button id="followButton" class="follow-button" th:if="${currentUserId != null and post.userId != null and currentUserId != post.userId}">팔로우</button>
         <span th:text="'작성일: ' + ${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm:ss')}"></span>
     </div>
     <div class="post-content" th:text="${post.contents}">포스트 내용</div>
@@ -169,9 +192,11 @@
 </div>
 <script th:inline="javascript">
     const postId = [[${post.id}]];
+    const postUserId = [[${post.userId}]];
+    const currentUserId = [[${currentUserId}]];
     const isAuthor = [[${isAuthor}]];
     let isLiked = false;
-
+    let isFollowing = false;
 
     function loadComments() {
         fetch(`/api/comments/${postId}`)
@@ -183,13 +208,13 @@
                     const commentElement = document.createElement('div');
                     commentElement.className = 'comment';
                     commentElement.innerHTML = `
-                    <p>${comment.content}</p>
-                    <small>작성자: ${comment.userName} | 작성일: ${new Date(comment.createdAt).toLocaleString()}</small>
-                    <button id="likeButton-${comment.id}" class="like-button" onclick="toggleCommentLike(${comment.id})">
-                        <span id="likeText-${comment.id}">좋아요</span>
-                        <span id="likeCount-${comment.id}" class="like-count">0</span>
-                    </button>
-                `;
+                        <p>${comment.content}</p>
+                        <small>작성자: <a href="/user/${comment.userId}" class="user-link">${comment.userName}</a> | 작성일: ${new Date(comment.createdAt).toLocaleString()}</small>
+                        <button id="likeButton-${comment.id}" class="like-button" onclick="toggleCommentLike(${comment.id})">
+                            <span id="likeText-${comment.id}">좋아요</span>
+                            <span id="likeCount-${comment.id}" class="like-count">0</span>
+                        </button>
+                    `;
                     commentsContainer.appendChild(commentElement);
                     loadCommentLikeStatus(comment.id);
                 });
@@ -316,12 +341,56 @@
             .catch(error => console.error('Error toggling like:', error));
     }
 
+    function checkFollowStatus() {
+        const followButton = document.getElementById('followButton');
+        if (followButton && currentUserId && postUserId && currentUserId !== postUserId) {
+            fetch(`/api/follows/is-following/${postUserId}`, {
+                headers: {
+                    'Authorization': `Bearer ${getCookie('stockJwtToken')}`
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    isFollowing = data;
+                    updateFollowButton();
+                })
+                .catch(error => console.error('Error:', error));
+        } else if (followButton) {
+            followButton.style.display = 'none';
+        }
+    }
 
+    function updateFollowButton() {
+        const followButton = document.getElementById('followButton');
+        followButton.textContent = isFollowing ? '언팔로우' : '팔로우';
+        followButton.classList.toggle('following', isFollowing);
+    }
+
+    function toggleFollow() {
+        const method = isFollowing ? 'DELETE' : 'POST';
+        fetch(`/api/follows/${postUserId}`, {
+            method: method,
+            headers: {
+                'Authorization': `Bearer ${getCookie('stockJwtToken')}`
+            }
+        })
+            .then(response => {
+                if (response.ok) {
+                    isFollowing = !isFollowing;
+                    updateFollowButton();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+    }
     // 페이지 로드 시 실행
     document.addEventListener('DOMContentLoaded', () => {
         loadLikeStatus();
         loadComments();
-        document.getElementById('likeButton').addEventListener('click', toggleLike);
+        checkFollowStatus();
+        const likeButton = document.getElementById('likeButton');
+        if (likeButton) likeButton.addEventListener('click', toggleLike);
+        const followButton = document.getElementById('followButton');
+        if (followButton) followButton.addEventListener('click', toggleFollow);
     });
 </script>
 </body>

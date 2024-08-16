@@ -22,10 +22,10 @@ public class FollowService {
     private final NewsfeedService newsfeedService;
 
     @Transactional
-    public void follow(Long followerId, String followingEmail) {
+    public void follow(Long followerId, Long followingId) {
         User follower = userRepository.findById(followerId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid follower ID"));
-        User following = userRepository.findByEmail(followingEmail);
+        User following = userRepository.findById(followingId).orElseThrow(() -> new IllegalArgumentException("Invalid following ID"));
 
         if (followRepository.existsByFollowerAndFollowing(follower, following)) {
             throw new IllegalStateException("Already following this user");
@@ -42,20 +42,22 @@ public class FollowService {
     }
 
     @Transactional
-    public void unfollow(Long followerId, String followingEmail) {
+    public void unfollow(Long followerId, Long followingId) {
         User follower = userRepository.findById(followerId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid follower ID"));
-        User following = userRepository.findByEmail(followingEmail);
+        User following = userRepository.findById(followingId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid following ID"));
 
         Optional<Follow> follow = followRepository.findByFollowerAndFollowing(follower, following);
 
         follow.ifPresent(followRepository::delete);
     }
 
-    public boolean isFollowing(Long followerId, String followingEmail) {
+    public boolean isFollowing(Long followerId, Long followingId) {
         User follower = userRepository.findById(followerId)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid follower ID"));
-        User following = userRepository.findByEmail(followingEmail);
+        User following = userRepository.findById(followingId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid following ID"));
 
         return followRepository.existsByFollowerAndFollowing(follower, following);
     }

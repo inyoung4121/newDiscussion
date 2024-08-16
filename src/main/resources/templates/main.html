@@ -139,6 +139,29 @@
             cursor: pointer;
         }
 
+        .user-link {
+            color: #03C75A;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .user-link:hover {
+            text-decoration: underline;
+        }
+        .auth-buttons {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .auth-buttons a, .auth-buttons button {
+            margin-left: 10px;
+            text-decoration: none;
+            color: white;
+            background-color: #03C75A;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -193,19 +216,21 @@
             })
             .then(data => {
                 const postsList = document.getElementById('recentPosts');
-                postsList.innerHTML = ''; // 기존 내용 초기화
+                postsList.innerHTML = '';
 
                 data.content.forEach(post => {
                     const postElement = document.createElement('div');
                     postElement.classList.add('forum-item');
                     postElement.innerHTML = `
-                    <h3>${post.title}</h3>
-                    <p>${post.contents.substring(0, 100)}...</p>
-                    <p class="author">작성자: ${post.userName}</p>
-                    <p class="date">작성일: ${new Date(post.createdAt).toLocaleString()}</p>
-                `;
-                    postElement.addEventListener('click', () => {
-                        window.location.href = `/post/${post.id}`;
+                            <h3>${post.title}</h3>
+                            <p>${post.contents.substring(0, 100)}...</p>
+                            <p class="author">작성자: <a href="/user/${post.userId}" class="user-link">${post.userName}</a></p>
+                            <p class="date">작성일: ${new Date(post.createdAt).toLocaleString()}</p>
+                        `;
+                    postElement.addEventListener('click', (e) => {
+                        if (!e.target.classList.contains('user-link')) {
+                            window.location.href = `/post/${post.id}`;
+                        }
                     });
                     postsList.appendChild(postElement);
                 });
@@ -261,14 +286,13 @@
     function logout() {
         document.cookie = 'stockJwtToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         alert('로그아웃되었습니다.');
-        checkLoginStatus(); // 로그아웃 후 상태 업데이트
+        checkLoginStatus();
+        window.location.reload();
     }
 
-    // 페이지 로드 시 로그인 상태 확인
     document.addEventListener('DOMContentLoaded', () => {
         fetchRecentPosts();
         checkLoginStatus();
-        console.log('초기 데이터 로드 완료');
     });
 </script>
 </body>

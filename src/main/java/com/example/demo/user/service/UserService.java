@@ -1,6 +1,7 @@
 package com.example.demo.user.service;
 
 import com.example.demo.S3.S3UploadService;
+import com.example.demo.follow.repository.FollowRepository;
 import com.example.demo.jwt.JwtUtil;
 import com.example.demo.user.dto.*;
 import com.example.demo.user.domain.User;
@@ -19,6 +20,7 @@ import java.util.Map;
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final S3UploadService s3UploadService;
@@ -98,6 +100,27 @@ public class UserService {
                 .intro(user.getIntro())
                 .build();
     }
+
+    @Transactional
+    public UserProfileDTO getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        long followerCount = followRepository.countByFollowingId(userId);
+        long followingCount = followRepository.countByFollowerId(userId);
+
+        return UserProfileDTO.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .profile(user.getProfile())
+                .intro(user.getIntro())
+                .followerCount(followerCount)
+                .followingCount(followingCount)
+                .build();
+    }
+
+
 
     @Transactional
     public UserGetDTO getUser(Long userId) {
