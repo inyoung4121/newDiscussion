@@ -183,10 +183,15 @@
                     const commentElement = document.createElement('div');
                     commentElement.className = 'comment';
                     commentElement.innerHTML = `
-                            <p>${comment.content}</p>
-                            <small>작성자: ${comment.userName} | 작성일: ${new Date(comment.createdAt).toLocaleString()}</small>
-                        `;
+                    <p>${comment.content}</p>
+                    <small>작성자: ${comment.userName} | 작성일: ${new Date(comment.createdAt).toLocaleString()}</small>
+                    <button id="likeButton-${comment.id}" class="like-button" onclick="toggleCommentLike(${comment.id})">
+                        <span id="likeText-${comment.id}">좋아요</span>
+                        <span id="likeCount-${comment.id}" class="like-count">0</span>
+                    </button>
+                `;
                     commentsContainer.appendChild(commentElement);
+                    loadCommentLikeStatus(comment.id);
                 });
             })
             .catch(error => console.error('Error loading comments:', error));
@@ -236,10 +241,38 @@
         likeCountElement.textContent = likeCount;
     }
 
+    function loadCommentLikeStatus(commentId) {
+        fetch(`/api/likes/comment/${commentId}`, {
+            headers: {
+                'Authorization': `Bearer `+ token
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                updateCommentLikeButton(commentId, data.liked, data.likeCount);
+            })
+            .catch(error => console.error('Error loading comment like status:', error));
+    }
+
+    function toggleCommentLike(commentId) {
+        fetch(`/api/likes/comment/${commentId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer `+token
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                updateCommentLikeButton(commentId, data.liked, data.likeCount);
+            })
+            .catch(error => console.error('Error toggling comment like:', error));
+    }
+
+
     function loadLikeStatus() {
         fetch(`/api/likes/post/${postId}`, {
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer `+token
             }
         })
             .then(response => response.json())
@@ -251,12 +284,27 @@
             .catch(error => console.error('Error loading like status:', error));
     }
 
+    function updateCommentLikeButton(commentId, isLiked, likeCount) {
+        const likeButton = document.getElementById(`likeButton-${commentId}`);
+        const likeText = document.getElementById(`likeText-${commentId}`);
+        const likeCountElement = document.getElementById(`likeCount-${commentId}`);
+
+        if (isLiked) {
+            likeButton.classList.add('liked');
+            likeText.textContent = '좋아요 취소';
+        } else {
+            likeButton.classList.remove('liked');
+            likeText.textContent = '좋아요';
+        }
+        likeCountElement.textContent = likeCount;
+    }
+
 
     function toggleLike() {
         fetch(`/api/likes/post/${postId}`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer `+token
             }
         })
             .then(response => response.json())
@@ -267,8 +315,6 @@
             })
             .catch(error => console.error('Error toggling like:', error));
     }
-
-
 
 
     // 페이지 로드 시 실행

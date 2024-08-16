@@ -70,13 +70,15 @@ public class UserService {
 
 
     @Transactional
-    public UserResponseDTO updateUser(UserSignupDTO updateDTO, MultipartFile profileFile) throws Exception {
-        User user = userRepository.findByEmail(updateDTO.getEmail());
+    public UserResponseDTO updateUser(Long userId, UserUpdateDTO updateDTO, MultipartFile profileFile) throws Exception {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         if (updateDTO.getName() != null && !user.getName().equals(updateDTO.getName())) {
             user.nameUpdate(updateDTO.getName());
         }
-        if (updateDTO.getProfile() != null) {
-            if(user.getProfile()!=null){
+        if (profileFile != null && !profileFile.isEmpty()) {
+            if(user.getProfile() != null){
                 s3UploadService.deleteFile(user.getProfile());
             }
             String url = s3UploadService.saveFile(profileFile);
@@ -86,7 +88,7 @@ public class UserService {
             user.introUpdate(updateDTO.getIntro());
         }
         if (updateDTO.getPassword() != null && !updateDTO.getPassword().isEmpty()){
-            user.passwordUpdate(updateDTO.getPassword());
+            user.passwordUpdate(passwordEncoder.encode(updateDTO.getPassword()));
         }
         return UserResponseDTO.builder()
                 .id(user.getId())
@@ -98,10 +100,10 @@ public class UserService {
     }
 
     @Transactional
-    public UserGetDTO getUser(String jwtToken) {
-        String email = jwtUtil.getEmailFromToken(jwtToken);
+    public UserGetDTO getUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        User user = userRepository.findByEmail(email);
         UserGetDTO userDTO = new UserGetDTO();
         userDTO.setEmail(user.getEmail());
         userDTO.setName(user.getName());

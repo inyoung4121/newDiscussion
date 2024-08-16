@@ -5,7 +5,13 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import jakarta.servlet.http.Cookie;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 import java.security.Key;
 import java.util.Date;
@@ -65,6 +71,37 @@ public class JwtUtil {
                 .getBody();
     }
 
+    public String extractTokenFromRequest(HttpServletRequest request) {
+        Logger logger = LoggerFactory.getLogger(this.getClass());
+        String token = null;
+
+        // 1. Try to extract from header
+        String bearerToken = request.getHeader("Authorization");
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+            token = bearerToken.substring(7);
+            logger.debug("Token extracted from Authorization header");
+            return token;
+        }
+
+        // 2. If not in header, try to extract from cookies
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie cookie : cookies) {
+                if ("stockJwtToken".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    logger.debug("Token extracted from cookie");
+                    return token;
+                }
+            }
+        }
+
+        // 3. If token is still null, log the failure
+        if (token == null) {
+            logger.warn("No token found in request (neither in header nor in cookies)");
+        }
+
+        return token;
+    }
     // 토큰 만료 여부 확인
     public Boolean isTokenExpired(String token) {
         return getExpirationDateFromToken(token).before(new Date());

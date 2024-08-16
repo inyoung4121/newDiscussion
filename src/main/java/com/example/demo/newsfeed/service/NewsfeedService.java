@@ -1,6 +1,7 @@
 package com.example.demo.newsfeed.service;
 
 import com.example.demo.comments.domain.Comment;
+import com.example.demo.comments.repository.CommentsRepository;
 import com.example.demo.follow.domain.Follow;
 import com.example.demo.follow.repository.FollowRepository;
 import com.example.demo.like.domain.Like;
@@ -28,6 +29,7 @@ public class NewsfeedService {
     private final FollowRepository followRepository;
     private final PostsRepository postsRepository;
     private final UserRepository userRepository;
+    private final CommentsRepository commentsRepository;
 
     @Transactional
     public void createNewsfeed(EventType eventType, User actor, Long targetId, Long referenceId) {
@@ -68,6 +70,13 @@ public class NewsfeedService {
         Post post = postsRepository.findById(like.getTargetId()).orElseThrow(() -> new RuntimeException("Post not found"));
         createNewsfeed(EventType.FOLLOWERLIKE, like.getUser(), post.getUser().getId(),like.getTargetId());
         createNewsfeed(EventType.MYPOSTLIKE, like.getUser(), post.getUser().getId(),like.getTargetId());
+    }
+
+    @Transactional
+    public void handleLikeCommentEvent(Like like) {
+        Comment comment = commentsRepository.findById(like.getTargetId()).orElseThrow(() -> new RuntimeException("Comment not found"));
+        createNewsfeed(EventType.FOLLOWERLIKE, like.getUser(), comment.getUser().getId(),like.getTargetId());
+        createNewsfeed(EventType.MYCOMMENTLIKE, like.getUser(), comment.getUser().getId(),like.getTargetId());
     }
 
     @Transactional

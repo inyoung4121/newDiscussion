@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Map;
 
@@ -22,6 +23,7 @@ import java.util.Map;
 @RestController
 public class UserController {
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     @GetMapping("/main")
     public ModelAndView goMain2(ModelAndView modelAndView) {
@@ -82,21 +84,32 @@ public class UserController {
     }
 
 
+    @GetMapping("/profile")
+    public ModelAndView showProfilePage(HttpServletRequest request) {
+        ModelAndView modelAndView = new ModelAndView("profileEditPage");
 
-    @GetMapping("/update")
-    public String showUpdateForm(HttpServletRequest request, Model model) {
+        String token = jwtUtil.extractTokenFromRequest(request);
+        if (token != null) {
+            Long userId = Long.valueOf(jwtUtil.getEmailFromToken(token));
+            UserGetDTO userProfile = userService.getUser(userId);
+            modelAndView.addObject("userProfile", userProfile);
+        }
 
-        String token = request.getHeader("Authorization").substring(7);
-        model.addAttribute("user", userService.getUser(token));
-
-        return "editUser";
+        return modelAndView;
     }
 
-    @PostMapping("/update")
-    public String updateUser(@RequestPart("userDTO") UserSignupDTO userDTO,
-                             @RequestPart("profile") MultipartFile profileFile) throws Exception {
-        UserResponseDTO user = userService.updateUser(userDTO,profileFile);
-
-        return "redirect:/user/edit/" + user.getId();
+    @PutMapping("/profile")
+    public ResponseEntity<UserResponseDTO> updateUserProfile(
+            @RequestPart(value = "userUpdateDTO") UserUpdateDTO updateDTO,
+            @RequestPart(value = "profileFile", required = false) MultipartFile profileFile,
+            HttpServletRequest request) {
+        try {
+            String token = jwtUtil.extractTokenFromRequest(request);
+            Long userId = Long.valueOf(jwtUtil.getEmailFromToken(token));
+            UserResponseDTO updatedUser = userService.updateUser(userId, updateDTO, profileFile);
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

@@ -123,6 +123,22 @@
         .write-button:hover {
             background-color: #02a348;
         }
+        .auth-buttons {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+        .auth-buttons a, .auth-buttons button {
+            margin-left: 10px;
+            text-decoration: none;
+            color: white;
+            background-color: #03C75A;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
     </style>
 </head>
 <body>
@@ -131,6 +147,7 @@
     <div class="auth-buttons">
         <a href="/login" id="loginButton">로그인</a>
         <a href="/signup" id="signupButton">회원가입</a>
+        <a href="/profile" id="profileButton" style="display: none;">개인정보 수정</a>
         <button id="logoutButton" style="display: none;" onclick="logout()">로그아웃</button>
     </div>
 </header>
@@ -221,19 +238,23 @@
 
     function checkLoginStatus() {
         const jwtToken = getCookie('stockJwtToken');
-        const isLoggedIn = !!jwtToken; // jwtToken이 존재하면 true, 아니면 false
+        const isLoggedIn = !!jwtToken;
 
         const loginButton = document.getElementById('loginButton');
         const signupButton = document.getElementById('signupButton');
         const logoutButton = document.getElementById('logoutButton');
+        const profileButton = document.getElementById('profileButton');
+
         if (isLoggedIn) {
             loginButton.style.display = 'none';
             signupButton.style.display = 'none';
             logoutButton.style.display = 'inline-block';
+            profileButton.style.display = 'inline-block';
         } else {
             loginButton.style.display = 'inline-block';
             signupButton.style.display = 'inline-block';
             logoutButton.style.display = 'none';
+            profileButton.style.display = 'none';
         }
     }
 

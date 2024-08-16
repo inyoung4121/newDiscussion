@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개인정보 수정</title>
+    <style>
+        body {
+            font-family: 'Noto Sans', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-top: 10px;
+        }
+
+        input[type="text"], input[type="email"], input[type="password"], textarea {
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        input[type="email"] {
+            background-color: #f0f0f0;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #03C75A;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #02a348;
+        }
+
+        .profile-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>사용자 프로필</h1>
+
+    <div id="message" class="message" style="display: none;"></div>
+    <div id="error" class="error" style="display: none;"></div>
+
+    <form id="profileForm">
+        <div class="form-group">
+            <img id="profileImage" th:src="${userProfile.profile}" alt="프로필 이미지" class="profile-image">
+            <input type="file" id="profileFile" name="profileFile" accept="image/*">
+        </div>
+        <div class="form-group">
+            <label for="name">이름:</label>
+            <input type="text" id="name" name="name" th:value="${userProfile.name}" required>
+        </div>
+        <div class="form-group">
+            <label for="email">이메일:</label>
+            <input type="email" id="email" th:value="${userProfile.email}" readonly>
+        </div>
+        <div class="form-group">
+            <label for="intro">자기소개:</label>
+            <textarea id="intro" name="intro" th:text="${userProfile.intro}"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="password">새 비밀번호:</label>
+            <input type="password" id="password" name="password" placeholder="변경하려면 입력하세요">
+        </div>
+        <button type="submit">프로필 업데이트</button>
+    </form>
+</div>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('profileForm').addEventListener('submit', updateProfile);
+    });
+
+    function updateProfile(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        const userUpdateDTO = {
+            name: document.getElementById('name').value,
+            intro: document.getElementById('intro').value,
+            password: document.getElementById('password').value
+        };
+        formData.append('userUpdateDTO', new Blob([JSON.stringify(userUpdateDTO)], {
+            type: "application/json"
+        }));
+
+        const profileFile = document.getElementById('profileFile').files[0];
+        if (profileFile) {
+            formData.append('profileFile', profileFile);
+        }
+
+        fetch('/api/user/profile', {
+            method: 'PUT',
+            headers: {
+                'Authorization': 'Bearer ' + getCookie('stockJwtToken')
+            },
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                showMessage('프로필이 성공적으로 업데이트되었습니다.');
+                // 업데이트된 정보로 폼 갱신
+                document.getElementById('name').value = data.username;
+                document.getElementById('intro').value = data.intro;
+                document.getElementById('profileImage').src = data.profile;
+            })
+            .catch(error => {
+                showError('프로필 업데이트 중 오류가 발생했습니다.');
+                console.error('Error:', error);
+            });
+    }
+
+    function showMessage(message) {
+        const messageElement = document.getElementById('message');
+        messageElement.textContent = message;
+        messageElement.style.display = 'block';
+        setTimeout(() => messageElement.style.display = 'none', 3000);
+    }
+
+    function showError(error) {
+        const errorElement = document.getElementById('error');
+        errorElement.textContent = error;
+        errorElement.style.display = 'block';
+        setTimeout(() => errorElement.style.display = 'none', 3000);
+    }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+</script>
+</body>
+</html>

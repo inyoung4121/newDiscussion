@@ -34,7 +34,7 @@ public class LikeService {
         if (alreadyLiked) {
             // 이미 좋아요를 누른 경우, 좋아요 취소
             likeRepository.deleteByUserIdAndTargetIdAndTargetType(userId, targetId, targetType);
-            return false; // 좋아요를 취소했음을 나타내기 위해 null 반환
+            return false; // 좋아요를 취소했음을 나타내기 위해 false 반환
         } else {
             // 새로운 좋아요 추가
             Like like = Like.builder()
@@ -44,18 +44,23 @@ public class LikeService {
                     .createdAt(LocalDateTime.now())
                     .build();
 
-            newsfeedService.handleLikeEvent(like);
+            if(targetType==LikeType.POST){
+                newsfeedService.handleLikeEvent(like);
+            }else{
+                newsfeedService.handleLikeCommentEvent(like);
+            }
+
             likeRepository.save(like);
             return true;
         }
     }
 
-    public long getLikeCount(Long postId) {
-        return likeRepository.countByTargetId(postId);
+    public long getLikeCount(Long targetId, LikeType targetType) {
+        return likeRepository.countByTargetIdAndTargetType(targetId, targetType);
     }
 
-    public boolean hasUserLiked(Long postId, Long userId) {
-        return likeRepository.findByTargetIdAndUserId(postId, userId).isPresent();
+    public boolean hasUserLiked(Long targetId, Long userId, LikeType targetType) {
+        return likeRepository.existsByUserIdAndTargetIdAndTargetType(userId, targetId, targetType);
     }
 
 }
